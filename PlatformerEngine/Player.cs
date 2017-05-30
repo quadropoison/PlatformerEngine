@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
@@ -169,10 +170,10 @@ namespace PlatformerEngine
                 velocity.Y = 0;
             }
 
-            UpdatePhisicsWall(playerRect, px, py);
+            UpdatePhisicsWall(playerRect, px, py, deltaTime);
         }
 
-        private void UpdatePhisicsWall(FloatRect playerRect, int px, int py)
+        private void UpdatePhisicsWall(FloatRect playerRect, int px, int py, float dt)
         {
             Tile[] walls = new Tile[]
             {
@@ -198,11 +199,22 @@ namespace PlatformerEngine
                     bool isWallTop = this.playerRect.CheckCollisionSideTop(this.tileRect);
                     bool isWallBottom  = this.playerRect.CheckCollisionSideBottom(this.tileRect); 
                     bool isSideCollision = this.playerRect.CheckCollisionSideLeftAndRight(this.tileRect);
+                    bool isWallAhead = this.playerRect.CheckCollisionSideLeft(this.playerRect);
+
+                    float speed = Math.Abs(movement.X);
 
                     if (isSideCollision)
-                        {
+                    {
                            if (isMoveRight)
-                           {                            
+                           {
+                               if (isWallBehind && isFalling && isWallAhead)
+                               {
+                                   movement.X = 0;
+                                   movement.Y = velocity.Y*dt;
+                                   velocity.Y = +5 - speed;
+                                   break;
+                               }
+
                                 movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
                                 velocity.X = 0;
                                 break;
@@ -210,64 +222,63 @@ namespace PlatformerEngine
 
                            if (isMoveLeft)
                            {
-                               if (isWallBehind && !isJumping && !isFalling && !isMoveLeft)
+
+                               if (isWallBehind && isFalling && isWallAhead)
+                               {
+                                   movement.X = 0;
+                                   movement.Y = velocity.Y * dt;
+                                   velocity.Y = +5 - speed;
+                                   break;
+                                }
+                               
+                                if (isWallBehind && !isJumping && !isFalling && !isMoveLeft)
                                {
                                   movement.X = (playerRect.Width - tileRect.Left);
                                   velocity.X = 0;
                                   break;
                                }
 
-                            if (isWallBehind && !isJumping && !isFalling && isMoveLeft)
-                            {
-                                movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
-                                velocity.X = 0;
-                                break;
-                            }
-
-                            if (isWallBehind && !isJumping && isFalling && isMoveLeft)
-                            {
-                                movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
-                                velocity.X = 0;
-                                break;
-                            }
-
-
+                               if (isWallBehind && !isJumping && !isFalling && isMoveLeft)
+                               {
+                                   movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
+                                   velocity.X = 0;
+                                   break;
+                               }
+                               
+                               if (isWallBehind && !isJumping && isFalling && isMoveLeft)
+                               {
+                                   movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
+                                   velocity.X = 0;
+                                   break;
+                               }
 
                             movement.X = ((tileRect.Left + tileRect.Width) - playerRect.Left);
-                               velocity.X = 0;
-                               break;                    
+                            velocity.X = 0;                            
+
                             }
                         }
 
                     if (isWallTop)
                     {
-                        if(isWallBottom)
+                        if(isWallBottom && !isFalling)
                         {
                             velocity.Y = 0;
                             break;
                         }
 
-                        movement.Y = ((tileRect.Height + playerRect.Top) - tileRect.Top);
-                        velocity.X = 0;
+                        if (isFalling && isJumping)
+                        {
+                            movement.Y = ((tileRect.Height + playerRect.Top) - tileRect.Top);
+                            velocity.X = 0;
+                            break;
+                        }
+
+                        if (!isFalling)
+                        {
+                            velocity.Y = 0;
+                            break;
+                        }
                     }
-
-                    //Vector2f offset = new Vector2f(playerRect.Left - tileRect.Left, 0);
-                    //offset /= Math.Abs(offset.X);
-
-                        //float speed = Math.Abs(movement.X);
-
-                        //Console.WriteLine(offset.X);
-
-                        //if (offset.X > 0)
-                        //{
-                        //    movement.X = ((tileRect.Left + tileRect.Width) - playerRect.Left);
-                        //    velocity.X = 0;
-                        //}
-                        //else if (offset.X < 0)
-                        //{
-                        //    movement.X = (tileRect.Left - (playerRect.Width + playerRect.Left));
-                        //    velocity.X = 0;
-                        //}
                 }
             }
         }

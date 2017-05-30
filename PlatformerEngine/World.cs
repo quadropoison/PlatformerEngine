@@ -1,17 +1,16 @@
-﻿using System;
-using SFML.Graphics;
+﻿using SFML.Graphics;
 using SFML.System;
 
 namespace PlatformerEngine
 {
-    class World: Transformable, Drawable
+    internal class World : Transformable, Drawable
     {
         public const int WorldSize = 400;
+        private readonly Sprite BackgroundSprite;
 
-        private Text GreetingsText;
-        private Sprite BackgroundSprite;
+        private readonly Chunk[][] Chunks;
 
-        private Chunk[][] Chunks;
+        private readonly Text GreetingsText;
 
         public World()
         {
@@ -26,14 +25,30 @@ namespace PlatformerEngine
 
             BackgroundSprite = new Sprite(Content.Background)
             {
-                Position = new Vector2f(0,0),
+                Position = new Vector2f(0, 0),
                 Scale = new Vector2f(1f, 1f)
             };
 
             Chunks = new Chunk[WorldSize][];
 
-            for (int i = 0; i < WorldSize; i++)
+            for (var i = 0; i < WorldSize; i++)
                 Chunks[i] = new Chunk[WorldSize];
+        }
+
+        public void Draw(RenderTarget target, RenderStates states)
+        {
+            states.Transform *= Transform;
+
+            target.Draw(BackgroundSprite);
+            target.Draw(GreetingsText);
+
+            for (var x = 0; x < WorldSize; x++)
+                for (var y = 0; y < WorldSize; y++)
+                {
+                    if (Chunks[x][y] == null) continue;
+
+                    target.Draw(Chunks[x][y], states);
+                }
         }
 
         public void GenerateWorld()
@@ -45,23 +60,25 @@ namespace PlatformerEngine
 
             GenerateWall(2, 2, 6, 7);
             GenerateWall(1, 1, 6, 7);
+
+            GeneratePlatform(11, 16, 7, 9);
         }
 
         private void GenerateWall(int startPositionX, int lastPositionX, int startPositionY, int lastPositionY)
         {
-            for (int x = startPositionX; x <= lastPositionX; x++)
-                for (int y = startPositionY; y <= lastPositionY; y++)
+            for (var x = startPositionX; x <= lastPositionX; x++)
+                for (var y = startPositionY; y <= lastPositionY; y++)
                     SetTile(TileType.GROUND, x, y);
         }
 
-        void GenerateCouplePlatforms(int count)
+        private void GenerateCouplePlatforms(int count)
         {
-            int startPositionX = 2;
-            int lastPositionX = 8;
-            int startPositionY = 8;
-            int lastPositionY = 10;
+            var startPositionX = 2;
+            var lastPositionX = 8;
+            var startPositionY = 8;
+            var lastPositionY = 10;
 
-            int step = 6;
+            var step = 6;
 
             while (count != 0)
             {
@@ -78,8 +95,8 @@ namespace PlatformerEngine
 
         private void GeneratePlatform(int startPositionX, int lastPositionX, int startPositionY, int lastPositionY)
         {
-            for (int x = startPositionX; x < lastPositionX; x++)
-                for (int y = startPositionY; y < lastPositionY; y++)
+            for (var x = startPositionX; x < lastPositionX; x++)
+                for (var y = startPositionY; y < lastPositionY; y++)
                     SetTile(TileType.GROUND, x, y);
         }
 
@@ -88,10 +105,10 @@ namespace PlatformerEngine
             var chunk = GetChunk(x, y);
             var tilePos = GetTilePosFromChunk(x, y);
 
-            Tile topTile = GetTile(x, y - 1);
-            Tile bottomTile = GetTile(x, y + 1);
-            Tile leftTile = GetTile(x - 1, y);
-            Tile rightTile = GetTile(x + 1, y);
+            var topTile = GetTile(x, y - 1);
+            var bottomTile = GetTile(x, y + 1);
+            var leftTile = GetTile(x - 1, y);
+            var rightTile = GetTile(x + 1, y);
 
             chunk.SetTile(type, tilePos.X, tilePos.Y, topTile, bottomTile, leftTile, rightTile);
         }
@@ -103,53 +120,31 @@ namespace PlatformerEngine
             if (chunk == null)
                 return null;
 
-           var tilePos = GetTilePosFromChunk(x, y);
+            var tilePos = GetTilePosFromChunk(x, y);
 
-           return chunk.GetTile(tilePos.X, tilePos.Y);
+            return chunk.GetTile(tilePos.X, tilePos.Y);
         }
 
         public Chunk GetChunk(int x, int y)
         {
-            int tempX = x / Chunk.ChunkSize;
-            int tempY = y / Chunk.ChunkSize;
+            var tempX = x/Chunk.ChunkSize;
+            var tempY = y/Chunk.ChunkSize;
 
-            if (tempX >= WorldSize || tempY >= WorldSize)
-            {
+            if ((tempX >= WorldSize) || (tempY >= WorldSize))
                 return null;
-            }
 
             if (Chunks[tempX][tempY] == null)
-            {
-                Chunks[tempX][tempY] = new Chunk(new Vector2i(tempX,tempY));
-            }
+                Chunks[tempX][tempY] = new Chunk(new Vector2i(tempX, tempY));
 
             return Chunks[tempX][tempY];
         }
 
         public Vector2i GetTilePosFromChunk(int x, int y)
         {
-            int tempX = x / Chunk.ChunkSize;
-            int tempY = y / Chunk.ChunkSize;
+            var tempX = x/Chunk.ChunkSize;
+            var tempY = y/Chunk.ChunkSize;
 
-            return new Vector2i(x - tempX * Chunk.ChunkSize, y - tempY * Chunk.ChunkSize);
-        }
-
-        public void Draw(RenderTarget target, RenderStates states)
-        {
-            states.Transform *= Transform;
-
-            target.Draw(BackgroundSprite);
-            target.Draw(GreetingsText);
-
-            for (int x = 0; x < WorldSize; x++)
-            {
-                for (int y = 0; y < WorldSize; y++)
-                {
-                    if (Chunks[x][y] == null) continue;
-
-                    target.Draw(Chunks[x][y], states);
-                }
-            }
+            return new Vector2i(x - tempX*Chunk.ChunkSize, y - tempY*Chunk.ChunkSize);
         }
     }
 }

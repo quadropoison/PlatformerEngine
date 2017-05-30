@@ -114,7 +114,7 @@ namespace PlatformerEngine
             else if (topTile == null && bottomTile != null && leftTile != null && rightTile != null)
             {
                 int i = Program.Random.Next(0, 3);
-                rectangleShape.TextureRect = GetTextureRect(9 + i, 1);
+                rectangleShape.TextureRect = GetTextureRect(9 + i, 4);
             }
 
             else if (topTile != null && bottomTile == null && leftTile != null && rightTile != null)
