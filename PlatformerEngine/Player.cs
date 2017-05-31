@@ -42,6 +42,7 @@ namespace PlatformerEngine
 
         private bool isWallByLeftSide;
         private bool isWallByRightSide;
+        private bool isRoof;
 
         public Player(World world) : base(Content.Player, frameSize)
         {
@@ -203,6 +204,11 @@ namespace PlatformerEngine
                 world.GetTile(px + 1, py - 3)
             };
 
+            Tile[] roofTile =
+            {
+                world.GetTile(px, py - 3)
+            };
+
             foreach (var tile in wallsByLeftSide)
             {
                 if (tile != null)
@@ -223,6 +229,17 @@ namespace PlatformerEngine
                 }
 
                 isWallByRightSide = false;
+            }
+
+            foreach (var tile in roofTile)
+            {
+                if (tile != null)
+                {
+                    isRoof = true;
+                    break;
+                }
+
+                isRoof = false;
             }
 
             foreach (var tile in walls)
@@ -309,7 +326,7 @@ namespace PlatformerEngine
                         }
                     }
 
-                    if (isWallTop)
+                    if (isRoof)
                     {
                         if (isWallBottom && !isFalling)
                         {
