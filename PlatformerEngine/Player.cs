@@ -1,14 +1,11 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using SFML.Graphics;
+﻿using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
 
 namespace PlatformerEngine
 {
-    class Player : CharacterBase, IAnimatable
+    internal class Player : CharacterBase, IAnimatable
     {
-
         public Clock AnimationClock { get; set; }
         public Animation CurrentAnimation { get; set; }
         public float AnimationSpeed { get; set; }
@@ -17,12 +14,12 @@ namespace PlatformerEngine
         {
             set
             {
-                int dir = value >= 0 ? 1 : -1;
+                var dir = value >= 0 ? 1 : -1;
                 Scale = new Vector2f(dir, 1);
             }
             get
             {
-                int dir = Scale.X >= 0 ? 1 : -1;
+                var dir = Scale.X >= 0 ? 1 : -1;
                 return dir;
             }
         }
@@ -32,16 +29,19 @@ namespace PlatformerEngine
         private const float PlayerJumpSpeedAcceleration = 0.5f;
         private const int frameSize = 32;
 
-        private bool isMoveLeft; 
+        private bool isMoveLeft;
         private bool isMoveRight;
         private bool isMoveUp;
         private bool isJumping;
         private bool isFalling;
 
-        private World world;
+        private readonly World world;
 
         private FloatRect playerRect;
-        private FloatRect tileRect;
+        private FloatRect bottomRectangle;
+
+        private bool isWallByLeftSide;
+        private bool isWallByRightSide;
 
         public Player(World world) : base(Content.Player, frameSize)
         {
@@ -57,7 +57,7 @@ namespace PlatformerEngine
         {
             CurrentAnimation = null;
 
-            float deltaTime = AnimationClock.Restart().AsSeconds();
+            var deltaTime = AnimationClock.Restart().AsSeconds();
 
             CharacterSprite.TextureRect = characterSpriteRect;
 
@@ -71,7 +71,7 @@ namespace PlatformerEngine
             PlayAnimation(AnimationClock, ref characterSpriteRect, CurrentAnimation, AnimationSpeed, frameSize);
 
             base.Update();
-          
+
             if (Position.Y > Program.Window.Size.Y)
                 Spawn();
         }
@@ -84,9 +84,9 @@ namespace PlatformerEngine
             isMoveRight = Keyboard.IsKeyPressed(Keyboard.Key.D);
             isMoveUp = Keyboard.IsKeyPressed(Keyboard.Key.W);
 
-            bool isMove = isMoveRight || isMoveLeft || isMoveUp;
+            var isMove = isMoveRight || isMoveLeft || isMoveUp;
 
-            bool isJump = (isMoveUp && !isJumping);
+            var isJump = isMoveUp && !isJumping;
 
             if (isJump)
             {
@@ -96,23 +96,29 @@ namespace PlatformerEngine
                 if (velocity.Y > -5)
                     velocity.Y += 0.1f;
 
-                movement.Y = -PlayerJumpSpeedAcceleration - PlayerMoveSpeed - velocity.Y * deltaTime;
-                velocity.Y = velocity.Y + Gravity * deltaTime;            
+                if (velocity.Y > 15)
+                    velocity.Y = 15;
+
+                movement.Y = -PlayerJumpSpeedAcceleration - PlayerMoveSpeed - velocity.Y*deltaTime;
+                velocity.Y = velocity.Y + Gravity*deltaTime;
             }
 
             if (isMove)
             {
                 if (isMoveLeft)
                 {
-                    CurrentAnimation = Anim_Left;                    
-                   
+                    CurrentAnimation = Anim_Left;
+
                     if (movement.X > 0)
                         movement.X = 0;
 
                     if (velocity.Y > -5)
                         velocity.Y += 0.1f;
 
-                    movement.X -= PlayerMoveSpeedAcceleration + PlayerMoveSpeed * deltaTime;
+                    if (velocity.Y > 15)
+                        velocity.Y = 15;
+
+                    movement.X -= PlayerMoveSpeedAcceleration + PlayerMoveSpeed*deltaTime;
                     Dirrection = -1;
                 }
 
@@ -126,7 +132,10 @@ namespace PlatformerEngine
                     if (velocity.Y > -5)
                         velocity.Y += 0.1f;
 
-                    movement.X += PlayerMoveSpeedAcceleration + PlayerMoveSpeed * deltaTime;
+                    if (velocity.Y > 15)
+                        velocity.Y = 15;
+
+                    movement.X += PlayerMoveSpeedAcceleration + PlayerMoveSpeed*deltaTime;
                     Dirrection = 1;
                 }
 
@@ -139,7 +148,6 @@ namespace PlatformerEngine
             {
                 movement = new Vector2f();
             }
-
         }
 
         private void UpdatePhisics(float deltaTime)
@@ -148,128 +156,164 @@ namespace PlatformerEngine
 
             velocity += new Vector2f(0, 0.15f);
 
-            Vector2f nextPosition = this.Position + velocity - CharacterSprite.Origin;
+            var nextPosition = Position + velocity - CharacterSprite.Origin;
             playerRect = new FloatRect(nextPosition, new Vector2f(32, 32));
 
-            int px = (int)((this.Position.X - CharacterSprite.Origin.X + 32 / 2) / Tile.TileSize);
-            int py = (int)((this.Position.Y + 32) / Tile.TileSize);
-            Tile tile = world.GetTile(px, py);
+            var px = (int) ((Position.X - CharacterSprite.Origin.X + 32/2)/Tile.TileSize);
+            var py = (int) ((Position.Y + 32)/Tile.TileSize);
+            var bottomTile = world.GetTile(px, py);
 
-            if (tile != null)
+            if (bottomTile != null)
             {
-                tileRect = new FloatRect(tile.Position, new Vector2f(Tile.TileSize, Tile.TileSize));
-
-                DebugRender.AddRectangle(tileRect, Color.White);
-
-                isFalling = !playerRect.Intersects(tileRect);
+                bottomRectangle = new FloatRect(bottomTile.Position, new Vector2f(Tile.TileSize, Tile.TileSize));
+                DebugRender.AddRectangle(bottomRectangle, Color.White);
+                isFalling = !playerRect.Intersects(bottomRectangle);
             }
 
             if (!isFalling)
-            {
-                velocity.Y = (tileRect.Top - tileRect.Height - (playerRect.Top + playerRect.Height)) * (deltaTime / 2) * 4;
                 velocity.Y = 0;
-            }
 
             UpdatePhisicsWall(playerRect, px, py, deltaTime);
         }
 
-        private void UpdatePhisicsWall(FloatRect playerRect, int px, int py, float dt)
+        private void UpdatePhisicsWall(FloatRect playerRect, int px, int py, float deltaTime)
         {
-            Tile[] walls = new Tile[]
+            Tile[] walls =
             {
                 world.GetTile(px - 1, py - 1),
                 world.GetTile(px - 1, py - 2),
                 world.GetTile(px - 1, py - 3),
-     
                 world.GetTile(px + 1, py - 1),
                 world.GetTile(px + 1, py - 2),
-                world.GetTile(px + 1, py - 3),
+                world.GetTile(px + 1, py - 3)
             };
 
-            foreach (Tile tile in walls)
+            Tile[] wallsByLeftSide =
+            {
+                world.GetTile(px - 1, py - 1),
+                world.GetTile(px - 1, py - 2),
+                world.GetTile(px - 1, py - 3)
+            };
+
+
+            Tile[] wallsByRightSide =
+            {
+                world.GetTile(px + 1, py - 1),
+                world.GetTile(px + 1, py - 2),
+                world.GetTile(px + 1, py - 3)
+            };
+
+            foreach (var tile in wallsByLeftSide)
+            {
+                if (tile != null)
+                {
+                    isWallByLeftSide = true;
+                    break;
+                }
+
+                isWallByLeftSide = false;
+            }
+
+            foreach (var tile in wallsByRightSide)
+            {
+                if (tile != null)
+                {
+                    isWallByRightSide = true;
+                    break;
+                }
+
+                isWallByRightSide = false;
+            }
+
+            foreach (var tile in walls)
             {
                 if (tile == null) continue;
 
-                FloatRect tileRect = new FloatRect(tile.Position, new Vector2f(Tile.TileSize, Tile.TileSize));
-                DebugRender.AddRectangle(tileRect, Color.Green);
+                var wallTileRect = new FloatRect(tile.Position, new Vector2f(Tile.TileSize, Tile.TileSize));
+                DebugRender.AddRectangle(wallTileRect, Color.Green);
 
-                if (playerRect.Intersects(tileRect))
+                if (playerRect.Intersects(wallTileRect))
                 {
-                    bool isWallBehind = this.playerRect.CheckCollisionSideRight(this.tileRect);
-                    bool isWallTop = this.playerRect.CheckCollisionSideTop(this.tileRect);
-                    bool isWallBottom  = this.playerRect.CheckCollisionSideBottom(this.tileRect); 
-                    bool isSideCollision = this.playerRect.CheckCollisionSideLeftAndRight(this.tileRect);
-                    bool isWallAhead = this.playerRect.CheckCollisionSideLeft(this.playerRect);
-
-                    float speed = Math.Abs(movement.X);
+                    var isWallTop = this.playerRect.CheckCollisionSideTop(wallTileRect);
+                    var isWallBottom = this.playerRect.CheckCollisionSideBottom(wallTileRect);
+                    var isSideCollision = this.playerRect.CheckCollisionSideLeftAndRight(wallTileRect);
 
                     if (isSideCollision)
                     {
-                           if (isMoveRight)
-                           {
-                               if (isWallBehind && isFalling && isWallAhead)
-                               {
-                                   movement.X = 0;
-                                   movement.Y = velocity.Y*dt;
-                                   velocity.Y = +5 - speed;
-                                   break;
-                               }
-
-                                movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
-                                velocity.X = 0;
-                                break;
-                           }
-
-                           if (isMoveLeft)
-                           {
-
-                               if (isWallBehind && isFalling && isWallAhead)
-                               {
-                                   movement.X = 0;
-                                   movement.Y = velocity.Y * dt;
-                                   velocity.Y = +5 - speed;
-                                   break;
-                                }
-                               
-                                if (isWallBehind && !isJumping && !isFalling && !isMoveLeft)
-                               {
-                                  movement.X = (playerRect.Width - tileRect.Left);
-                                  velocity.X = 0;
-                                  break;
-                               }
-
-                               if (isWallBehind && !isJumping && !isFalling && isMoveLeft)
-                               {
-                                   movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
-                                   velocity.X = 0;
-                                   break;
-                               }
-                               
-                               if (isWallBehind && !isJumping && isFalling && isMoveLeft)
-                               {
-                                   movement.X = (playerRect.Left - (tileRect.Left - this.tileRect.Width));
-                                   velocity.X = 0;
-                                   break;
-                               }
-
-                            movement.X = ((tileRect.Left + tileRect.Width) - playerRect.Left);
-                            velocity.X = 0;                            
-
-                            }
-                        }
-
-                    if (isWallTop)
-                    {
-                        if(isWallBottom && !isFalling)
+                        if (isWallByRightSide && isWallByLeftSide
+                            && isWallBottom && isWallTop
+                            && !isJumping && !isFalling
+                            && (!isMoveLeft || isMoveLeft) && (!isMoveRight || isMoveRight))
                         {
+                            movement.Y = (bottomRectangle.Top - bottomRectangle.Height -
+                                          (playerRect.Top + playerRect.Height))*(deltaTime/2)*4;
                             velocity.Y = 0;
                             break;
                         }
 
-                        if (isFalling && isJumping)
+                        if (isMoveRight)
                         {
-                            movement.Y = ((tileRect.Height + playerRect.Top) - tileRect.Top);
-                            velocity.X = 0;
+                            if (isFalling && !isJumping && !isWallByRightSide)
+                            {
+                                movement.Y = velocity.Y*deltaTime;
+                                velocity.Y = velocity.Y + Gravity*deltaTime;
+                                break;
+                            }
+
+                            if (isFalling && !isJumping && isWallByRightSide)
+                            {
+                                movement.X = 0;
+                                movement.Y = velocity.Y*deltaTime;
+                                velocity.Y = velocity.Y + Gravity*deltaTime;
+                                break;
+                            }
+
+                            if (!isFalling && !isJumping && isWallByRightSide)
+                            {
+                                movement.X = velocity.X*deltaTime;
+                                velocity.X = 0;
+                                break;
+                            }
+                        }
+
+                        if (isMoveLeft)
+                        {
+                            if (isFalling && !isJumping && !isWallByLeftSide)
+                            {
+                                movement.Y = velocity.Y*deltaTime;
+                                velocity.Y = velocity.Y + Gravity*deltaTime;
+                                break;
+                            }
+
+                            if (isFalling && !isJumping && isWallByLeftSide)
+                            {
+                                movement.X = 0;
+                                movement.Y = velocity.Y*deltaTime;
+                                velocity.Y = velocity.Y + Gravity*deltaTime;
+                                break;
+                            }
+
+                            if (!isFalling && !isJumping && isWallByLeftSide)
+                            {
+                                movement.X = velocity.X*deltaTime;
+                                velocity.X = 0;
+                                break;
+                            }
+
+                            if (isFalling && isJumping && isWallByLeftSide)
+                            {
+                                movement.X = 0;
+                                velocity.X = 0;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isWallTop)
+                    {
+                        if (isWallBottom && !isFalling)
+                        {
+                            velocity.Y = 0;
                             break;
                         }
 
@@ -278,12 +322,21 @@ namespace PlatformerEngine
                             velocity.Y = 0;
                             break;
                         }
+
+                        if (isFalling && isJumping)
+                        {
+                            movement.Y = velocity.Y*deltaTime;
+                            velocity.Y = velocity.Y + Gravity*deltaTime;
+                            velocity.X = 0;
+                            break;
+                        }
                     }
                 }
             }
         }
 
-        public void PlayAnimation(Clock animationClock, ref IntRect characterSpriteRectangle, Animation currentAnimation, float animationSpeed, int frameSize)
+        public void PlayAnimation(Clock animationClock, ref IntRect characterSpriteRectangle, Animation currentAnimation,
+            float animationSpeed, int frameSize)
         {
             if (animationClock.ElapsedTime.AsSeconds() > animationSpeed)
             {
@@ -291,7 +344,7 @@ namespace PlatformerEngine
                 {
                     characterSpriteRectangle.Top = currentAnimation.offsetTop;
 
-                    if (characterSpriteRectangle.Left == (currentAnimation.numFrames - 1) * frameSize)
+                    if (characterSpriteRectangle.Left == (currentAnimation.numFrames - 1)*frameSize)
                         characterSpriteRectangle.Left = 0;
                     else
                         characterSpriteRectangle.Left += frameSize;

@@ -54,6 +54,8 @@ namespace PlatformerEngine
         public void GenerateWorld()
         {
             GenerateCouplePlatforms(8);
+            GenerateWall(8, 14, 16, 18);
+            GenerateWall(4, 6, 12, 14);
 
             GenerateWall(7, 7, 6, 7);
             GenerateWall(8, 8, 6, 7);
