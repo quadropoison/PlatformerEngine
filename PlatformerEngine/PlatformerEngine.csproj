@@ -38,16 +38,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="sfmlnet-audio-2">
-      <HintPath>lib\SFML.Net-2.3\x86\sfmlnet-audio-2.dll</HintPath>
+      <HintPath>..\..\..\..\Users\AlanVm\Downloads\2D-GameEngine-master\2D-GameEngine-master\BodyTest\packages\SFML.Net.2.2\lib\sfmlnet-audio-2.dll</HintPath>
     </Reference>
     <Reference Include="sfmlnet-graphics-2">
-      <HintPath>lib\SFML.Net-2.3\x86\sfmlnet-graphics-2.dll</HintPath>
+      <HintPath>..\..\..\..\Users\AlanVm\Downloads\2D-GameEngine-master\2D-GameEngine-master\BodyTest\packages\SFML.Net.2.2\lib\sfmlnet-graphics-2.dll</HintPath>
     </Reference>
     <Reference Include="sfmlnet-system-2">
-      <HintPath>lib\SFML.Net-2.3\x86\sfmlnet-system-2.dll</HintPath>
+      <HintPath>..\..\..\..\Users\AlanVm\Downloads\2D-GameEngine-master\2D-GameEngine-master\BodyTest\packages\SFML.Net.2.2\lib\sfmlnet-system-2.dll</HintPath>
     </Reference>
     <Reference Include="sfmlnet-window-2">
-      <HintPath>lib\SFML.Net-2.3\x86\sfmlnet-window-2.dll</HintPath>
+      <HintPath>..\..\..\..\Users\AlanVm\Downloads\2D-GameEngine-master\2D-GameEngine-master\BodyTest\packages\SFML.Net.2.2\lib\sfmlnet-window-2.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -111,6 +111,9 @@
     <Content Include="lib\SFML.Net-2.3\natives\csfml-network-2.dll" />
     <Content Include="lib\SFML.Net-2.3\natives\csfml-system-2.dll" />
     <Content Include="lib\SFML.Net-2.3\natives\csfml-window-2.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

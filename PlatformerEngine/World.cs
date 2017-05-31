@@ -6,6 +6,7 @@ namespace PlatformerEngine
     internal class World : Transformable, Drawable
     {
         public const int WorldSize = 400;
+
         private readonly Sprite BackgroundSprite;
 
         private readonly Chunk[][] Chunks;
@@ -54,6 +55,7 @@ namespace PlatformerEngine
         public void GenerateWorld()
         {
             GenerateCouplePlatforms(8);
+
             GenerateWall(8, 14, 16, 18);
             GenerateWall(4, 6, 12, 14);
 
@@ -64,6 +66,7 @@ namespace PlatformerEngine
             GenerateWall(1, 1, 6, 7);
 
             GeneratePlatform(11, 16, 7, 9);
+            GeneratePlatform(28, 46, 7, 9);
         }
 
         private void GenerateWall(int startPositionX, int lastPositionX, int startPositionY, int lastPositionY)

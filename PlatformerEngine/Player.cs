@@ -1,4 +1,5 @@
-﻿using SFML.Graphics;
+﻿using System;
+using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
 
@@ -26,7 +27,7 @@ namespace PlatformerEngine
 
         private const float PlayerMoveSpeed = 4f;
         private const float PlayerMoveSpeedAcceleration = 0.2f;
-        private const float PlayerJumpSpeedAcceleration = 0.5f;
+        private const float PlayerJumpSpeedAcceleration = 1.8f;
         private const int frameSize = 32;
 
         private bool isMoveLeft;
@@ -35,10 +36,15 @@ namespace PlatformerEngine
         private bool isJumping;
         private bool isFalling;
 
+        public int PlayerPositionX { get; set; }
+        public int PlayerPositionY { get; set; }
+
         private readonly World world;
 
         private FloatRect playerRect;
         private FloatRect bottomRectangle;
+
+        public Text PlayerPosition { get; set; }
 
         private bool isWallByLeftSide;
         private bool isWallByRightSide;
@@ -54,8 +60,27 @@ namespace PlatformerEngine
             this.world = world;
         }
 
+        private void SetOutputWithPlayerPisition()
+        {
+            PlayerPosition = new Text
+            {
+                Font = Content.BitwiseFont,
+                DisplayedString = $"X: {PlayerPositionX} Y: {PlayerPositionY}",
+                CharacterSize = 9,
+                Color = Color.White,
+                Style = Text.Styles.Regular,
+                Position = new Vector2f(90,2)
+                
+            };
+        }
+
         public override void Update()
         {
+            PlayerPositionX = (int)Position.X;
+            PlayerPositionY = (int)Position.Y;
+
+            SetOutputWithPlayerPisition();
+
             CurrentAnimation = null;
 
             var deltaTime = AnimationClock.Restart().AsSeconds();
@@ -94,7 +119,7 @@ namespace PlatformerEngine
                 CurrentAnimation = null;
                 isJumping = true;
 
-                if (velocity.Y > -5)
+                if (velocity.Y > -8)
                     velocity.Y += 0.1f;
 
                 if (velocity.Y > 15)
