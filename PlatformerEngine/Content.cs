@@ -20,6 +20,7 @@ namespace PlatformerEngine
         public static Texture Background { get; private set; }       
         public static Texture Tiles { get; private set; }
         public static Texture Player { get; private set; }
+        public static Texture TextBackground { get; private set; }
 
         public static void LoadContent()
         {
@@ -27,6 +28,7 @@ namespace PlatformerEngine
             Background = new Texture(BackgroundsDirPath + "\\city.png");
             Tiles = new Texture(SpritesDirPath + "\\Example.png");
             Player = new Texture(SpritesDirPath + "\\SlyBunk.png");
+            TextBackground = new Texture(SpritesDirPath + "\\SemiTransparentBg.png");
         }
     }
 }

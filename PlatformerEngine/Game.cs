@@ -28,7 +28,6 @@ namespace PlatformerEngine
         {
             Program.Window.Draw(world);
             Program.Window.Draw(player);
-            Program.Window.Draw(player.PlayerPosition);
             DebugRender.Draw(Program.Window);
         }
     }

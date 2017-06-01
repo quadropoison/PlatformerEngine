@@ -11,7 +11,7 @@ namespace PlatformerEngine
         public Animation CurrentAnimation { get; set; }
         public float AnimationSpeed { get; set; }
 
-        public int Dirrection
+        private int Dirrection
         {
             set
             {
@@ -28,16 +28,16 @@ namespace PlatformerEngine
         private const float PlayerMoveSpeed = 4f;
         private const float PlayerMoveSpeedAcceleration = 0.2f;
         private const float PlayerJumpSpeedAcceleration = 1.8f;
-        private const int frameSize = 32;
+        private const int FrameSize = 32;
 
+        private bool isMove;
         private bool isMoveLeft;
         private bool isMoveRight;
         private bool isMoveUp;
-        private bool isJumping;
+        private bool isJumpUp;
         private bool isFalling;
 
-        public int PlayerPositionX { get; set; }
-        public int PlayerPositionY { get; set; }
+        private Vector2i thisPosition { get; set; }
 
         private readonly World world;
 
@@ -46,11 +46,11 @@ namespace PlatformerEngine
 
         public Text PlayerPosition { get; set; }
 
-        private bool isWallByLeftSide;
-        private bool isWallByRightSide;
-        private bool isRoof;
+        private bool isWallByLeftSideCollision;
+        private bool isWallByRightSideCollision;
+        private bool isRoofCollision;
 
-        public Player(World world) : base(Content.Player, frameSize)
+        public Player(World world) : base(Content.Player, FrameSize)
         {
             Anim_Right = new Animation(0, 0, 4);
             Anim_Left = new Animation(0, 0, 4);
@@ -60,26 +60,10 @@ namespace PlatformerEngine
             this.world = world;
         }
 
-        private void SetOutputWithPlayerPisition()
-        {
-            PlayerPosition = new Text
-            {
-                Font = Content.BitwiseFont,
-                DisplayedString = $"X: {PlayerPositionX} Y: {PlayerPositionY}",
-                CharacterSize = 9,
-                Color = Color.White,
-                Style = Text.Styles.Regular,
-                Position = new Vector2f(90,2)
-                
-            };
-        }
-
         public override void Update()
         {
-            PlayerPositionX = (int)Position.X;
-            PlayerPositionY = (int)Position.Y;
-
-            SetOutputWithPlayerPisition();
+            thisPosition = new Vector2i((int)Position.X, (int)Position.Y);                                    
+            DebugRender.AddPositionText("Player", thisPosition, Color.White);
 
             CurrentAnimation = null;
 
@@ -88,13 +72,12 @@ namespace PlatformerEngine
             CharacterSprite.TextureRect = characterSpriteRect;
 
             UpdateMovement(deltaTime);
-
             UpdatePhisics(deltaTime);
 
             //Console.WriteLine($"{velocity.Y}");
             //Console.WriteLine($"{velocity.X}");
 
-            PlayAnimation(AnimationClock, ref characterSpriteRect, CurrentAnimation, AnimationSpeed, frameSize);
+            PlayAnimation(AnimationClock, ref characterSpriteRect, CurrentAnimation, AnimationSpeed, FrameSize);
 
             base.Update();
 
@@ -104,20 +87,18 @@ namespace PlatformerEngine
 
         private void UpdateMovement(float deltaTime)
         {
-            isJumping = false;
+            isJumpUp = false;
 
             isMoveLeft = Keyboard.IsKeyPressed(Keyboard.Key.A);
             isMoveRight = Keyboard.IsKeyPressed(Keyboard.Key.D);
             isMoveUp = Keyboard.IsKeyPressed(Keyboard.Key.W);
 
-            var isMove = isMoveRight || isMoveLeft || isMoveUp;
+            isMove = isMoveRight || isMoveLeft || isMoveUp;
 
-            var isJump = isMoveUp && !isJumping;
-
-            if (isJump)
+            if (isMoveUp && !isJumpUp)
             {
                 CurrentAnimation = null;
-                isJumping = true;
+                isJumpUp = true;
 
                 if (velocity.Y > -8)
                     velocity.Y += 0.1f;
@@ -238,33 +219,33 @@ namespace PlatformerEngine
             {
                 if (tile != null)
                 {
-                    isWallByLeftSide = true;
+                    isWallByLeftSideCollision = true;
                     break;
                 }
 
-                isWallByLeftSide = false;
+                isWallByLeftSideCollision = false;
             }
 
             foreach (var tile in wallsByRightSide)
             {
                 if (tile != null)
                 {
-                    isWallByRightSide = true;
+                    isWallByRightSideCollision = true;
                     break;
                 }
 
-                isWallByRightSide = false;
+                isWallByRightSideCollision = false;
             }
 
             foreach (var tile in roofTile)
             {
                 if (tile != null)
                 {
-                    isRoof = true;
+                    isRoofCollision = true;
                     break;
                 }
 
-                isRoof = false;
+                isRoofCollision = false;
             }
 
             foreach (var tile in walls)
@@ -282,9 +263,9 @@ namespace PlatformerEngine
 
                     if (isSideCollision)
                     {
-                        if (isWallByRightSide && isWallByLeftSide
+                        if (isWallByRightSideCollision && isWallByLeftSideCollision
                             && isWallBottom && isWallTop
-                            && !isJumping && !isFalling
+                            && !isJumpUp && !isFalling
                             && (!isMoveLeft || isMoveLeft) && (!isMoveRight || isMoveRight))
                         {
                             movement.Y = (bottomRectangle.Top - bottomRectangle.Height -
@@ -295,14 +276,14 @@ namespace PlatformerEngine
 
                         if (isMoveRight)
                         {
-                            if (isFalling && !isJumping && !isWallByRightSide)
+                            if (isFalling && !isJumpUp && !isWallByRightSideCollision)
                             {
                                 movement.Y = velocity.Y*deltaTime;
                                 velocity.Y = velocity.Y + Gravity*deltaTime;
                                 break;
                             }
 
-                            if (isFalling && !isJumping && isWallByRightSide)
+                            if (isFalling && !isJumpUp && isWallByRightSideCollision)
                             {
                                 movement.X = 0;
                                 movement.Y = velocity.Y*deltaTime;
@@ -310,7 +291,7 @@ namespace PlatformerEngine
                                 break;
                             }
 
-                            if (!isFalling && !isJumping && isWallByRightSide)
+                            if (!isFalling && !isJumpUp && isWallByRightSideCollision)
                             {
                                 movement.X = velocity.X*deltaTime;
                                 velocity.X = 0;
@@ -320,14 +301,14 @@ namespace PlatformerEngine
 
                         if (isMoveLeft)
                         {
-                            if (isFalling && !isJumping && !isWallByLeftSide)
+                            if (isFalling && !isJumpUp && !isWallByLeftSideCollision)
                             {
                                 movement.Y = velocity.Y*deltaTime;
                                 velocity.Y = velocity.Y + Gravity*deltaTime;
                                 break;
                             }
 
-                            if (isFalling && !isJumping && isWallByLeftSide)
+                            if (isFalling && !isJumpUp && isWallByLeftSideCollision)
                             {
                                 movement.X = 0;
                                 movement.Y = velocity.Y*deltaTime;
@@ -335,14 +316,14 @@ namespace PlatformerEngine
                                 break;
                             }
 
-                            if (!isFalling && !isJumping && isWallByLeftSide)
+                            if (!isFalling && !isJumpUp && isWallByLeftSideCollision)
                             {
                                 movement.X = velocity.X*deltaTime;
                                 velocity.X = 0;
                                 break;
                             }
 
-                            if (isFalling && isJumping && isWallByLeftSide)
+                            if (isFalling && isJumpUp && isWallByLeftSideCollision)
                             {
                                 movement.X = 0;
                                 velocity.X = 0;
@@ -351,7 +332,7 @@ namespace PlatformerEngine
                         }
                     }
 
-                    if (isRoof)
+                    if (isRoofCollision)
                     {
                         if (isWallBottom && !isFalling)
                         {
@@ -365,7 +346,7 @@ namespace PlatformerEngine
                             break;
                         }
 
-                        if (isFalling && isJumping)
+                        if (isFalling && isJumpUp)
                         {
                             movement.Y = velocity.Y*deltaTime;
                             velocity.Y = velocity.Y + Gravity*deltaTime;
