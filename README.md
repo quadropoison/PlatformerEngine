@@ -1,6 +1,6 @@
 # PlatformerEngine
 
-This project is simple 2D platformer game engine, created with using SFML bindings for .Net.  
+This project is a simple 2D platformer game engine. It was created with using SFML bindings for .Net.  
 
 ## Motivation
 
@@ -8,11 +8,11 @@ The Project created as learning sandbox for practicing with Math theory for Game
 
 ## What was implemented
 
-Implemented skeleton of the framework and composed first demo scene.
+Implemented a skeleton of the engine and composed first demo scene.
 In current implementation framework has support: 
 
-* World generation using TileMaps
+* World generation using tile maps
 * Support uploading of background textures and fonts.
 * Player movement and animation
 * Collision detection 
-* Debug information rendering for testing of collision detection.
+* Debug class which renders information for testing of collision detection.
